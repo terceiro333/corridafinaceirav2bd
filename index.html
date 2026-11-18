@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#071729">
+  <meta name="description" content="Corrida Financeira V2: um endless runner 3D educativo em uma cidade brasileira estilizada.">
+  <title>Corrida Financeira — V2</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/tutorial-house.css">
+</head>
+<body>
+  <main id="game" aria-label="Jogo Corrida Financeira">
+    <canvas id="scene"></canvas>
+    <img class="corner-logo" src="./assets/textures/logo-3md.png" alt="Logo 3º Médio">
+    <audio id="music" src="./assets/audio/shade-drift-phonk.mp3" loop preload="metadata"></audio>
+    <button id="time-toggle" class="sound-toggle time-toggle" type="button" aria-label="Ativar modo noturno" title="Ativar modo noturno"><span id="time-icon">☀</span><b id="time-label">DIA</b></button>
+    <button id="sound-toggle" class="sound-toggle" type="button" aria-label="Mutar música" title="Mutar música"><span id="sound-icon">♪</span><b id="sound-label">MÚSICA</b></button>
+    <button id="pause-button" class="pause-button hidden" type="button" aria-label="Pausar jogo" title="Pausar jogo">Ⅱ</button>
+    <div id="loading" class="screen"><div class="loader"></div><p>PREPARANDO A CIDADE…</p></div>
+    <section id="dev-console" class="dev-console hidden" aria-label="Console de desenvolvedor">
+      <header><div><i></i><span>CONSOLE DE DESENVOLVEDOR</span></div><small>F8 / ESC · Y COM CAMPO VAZIO</small></header>
+      <div id="console-output" class="console-output" role="log" aria-live="polite"></div>
+      <label class="console-command"><b>&gt;</b><input id="console-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="digite um comando..." aria-label="Comando do console"></label>
+    </section>
+
+    <section id="menu" class="screen hidden">
+      <div class="brand"><span class="eyebrow">ENDLESS RUNNER 3D</span><h1>CORRIDA<br><em>FINANCEIRA</em></h1></div>
+      <p class="tagline">Colete dinheiro, desvie dos obstáculos<br>e chegue o mais longe possível!</p>
+      <div class="wallet" aria-live="polite">
+        <span>SEU SALDO TOTAL</span>
+        <strong id="total-money">R$ 0</strong>
+      </div>
+      <button id="play" class="primary">JOGAR <span>▶</span></button>
+      <div class="menu-actions">
+        <button id="open-investments" class="invest-button">INVESTIMENTOS <span>↗</span></button>
+        <button id="open-shop" class="invest-button shop-button">LOJA DE SKINS <span>👕</span></button>
+        <button id="open-tigrinho" class="invest-button tiger-button">TIGRINHO <span>🎰</span></button>
+        <button id="open-tutorial" class="invest-button tutorial-button">TUTORIAL <span>?</span></button>
+        <button id="open-house" class="invest-button house-button">CASA <span>⌂</span></button>
+        <button id="open-settings" class="invest-button settings-button">CONFIGURAÇÕES <span>⚙️</span></button>
+      </div>
+      <div class="controls-card">
+        <h2>CONTROLES</h2>
+        <div><kbd>←</kbd><kbd>→</kbd><span>Mover</span></div>
+        <div><kbd>↑</kbd><kbd>ESPAÇO</kbd><span>Pular</span></div>
+        <div><kbd>↓</kbd><span>Deslizar</span></div>
+      </div>
+      <small class="music-credit">♪ Shade — Evgeny Bardyuzha / Pixabay</small>
+    </section>
+
+    <section id="house" class="screen hidden" aria-label="Minha casa">
+      <div class="house-panel">
+        <header class="invest-header">
+          <button id="close-house" class="back-button" aria-label="Voltar ao menu">←</button>
+          <div><span class="eyebrow">SEU PATRIMÔNIO</span><h2>MINHA CASA</h2></div>
+          <div class="available house-balance-card"><span>DINHEIRO ATUAL</span><strong id="house-balance">R$ 0</strong></div>
+        </header>
+        <div class="house-layout">
+          <div id="house-visual" class="house-visual level-1" aria-label="Cena tridimensional da casa atual">
+            <canvas id="house-scene" aria-label="Casa 3D interativa"></canvas>
+            <div class="house-scene-badge"><b>3D</b><span>ARRASTE PARA OLHAR</span></div>
+            <div id="house-transform" class="house-transform"></div>
+          </div>
+          <aside class="house-info">
+            <span class="eyebrow">NÍVEL ATUAL</span><h3 id="house-name">Nível 1 — Casa Velha</h3><p id="house-description">Uma casa antiga, com pintura gasta, telhado simples e poucos detalhes.</p>
+            <div class="house-progress-copy"><span id="house-level-copy">NÍVEL 1 / 5</span><strong id="house-progress-percent">20%</strong></div>
+            <div class="house-progress"><i id="house-progress-fill"></i></div>
+            <div id="house-next" class="house-next"><span>PRÓXIMA MELHORIA</span><strong id="house-upgrade-cost">R$ 5.000</strong><small id="house-next-name">Casa Simples</small></div>
+            <button id="upgrade-house" class="primary house-upgrade">MELHORAR CASA <span>↑</span></button>
+            <p id="house-max-message" class="house-max hidden"><strong>CASA NO NÍVEL MÁXIMO</strong>Você conquistou a melhor casa disponível.</p>
+            <small id="house-spent">Total investido na casa: R$ 0</small>
+            <button id="reset-house" class="house-reset-link hidden" type="button">Resetar casa</button>
+          </aside>
+        </div>
+      </div>
+      <div id="house-message" class="shop-dialog hidden" aria-live="assertive"><div class="shop-dialog-card house-message-card"><span id="house-message-icon">✓</span><h3 id="house-message-title">CASA MELHORADA!</h3><p id="house-message-text"></p><button id="house-message-ok" class="primary">CONTINUAR</button></div></div>
+      <div id="house-reset-dialog" class="shop-dialog hidden" role="alertdialog" aria-modal="true" aria-labelledby="house-reset-title" aria-describedby="house-reset-description">
+        <div class="shop-dialog-card house-message-card">
+          <h3 id="house-reset-title">Resetar evolução da casa?</h3>
+          <p id="house-reset-description">Tem certeza que deseja voltar sua casa ao Nível 1? Todas as melhorias da casa serão perdidas e o dinheiro investido não será devolvido.</p>
+          <div><button id="house-reset-cancel" class="secondary" type="button">Cancelar</button><button id="house-reset-confirm" class="primary" type="button">Confirmar reset</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="settings" class="screen hidden" aria-label="Configurações do jogo">
+      <div class="settings-panel">
+        <header class="invest-header">
+          <button id="close-settings-top" class="back-button" aria-label="Voltar ao menu">←</button>
+          <div><span class="eyebrow">PREFERÊNCIAS DO JOGO</span><h2>⚙️ CONFIGURAÇÕES</h2></div>
+        </header>
+        <div class="settings-list">
+          <div class="setting-row">
+            <div class="setting-copy"><span>🎵</span><div><strong>VOLUME DA MÚSICA</strong><small>Controla somente a trilha sonora.</small></div></div>
+            <div class="range-control"><input id="music-volume" type="range" min="0" max="100" value="100" aria-label="Volume da música"><output id="music-volume-value">100%</output></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-copy"><span>🔊</span><div><strong>VOLUME DOS EFEITOS SONOROS</strong><small>Coleta, pulo, colisão, botões e demais efeitos.</small></div></div>
+            <div class="range-control"><input id="sfx-volume" type="range" min="0" max="100" value="100" aria-label="Volume dos efeitos sonoros"><output id="sfx-volume-value">100%</output></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-copy"><span>✨</span><div><strong>EFEITOS VISUAIS AO COLETAR R$</strong><small>Partículas e brilho exibidos durante a coleta.</small></div></div>
+            <button id="visual-effects-toggle" class="setting-toggle on" type="button" aria-pressed="true"><i></i><b>ATIVADO</b></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-copy"><span aria-hidden="true">⚡</span><div><label id="graphics-mode-label" for="graphics-mode"><strong>MODO GRÁFICO</strong></label><small id="graphics-mode-description">O Modo Muito Otimizado prioriza o FPS em PCs fracos.</small></div></div>
+            <select id="graphics-mode" class="graphics-mode-select" aria-describedby="graphics-mode-description">
+              <option value="normal">Normal</option>
+              <option value="optimized">Otimizado</option>
+              <option value="very-optimized">Modo Muito Otimizado</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <div class="setting-copy"><span>📊</span><div><strong>MOSTRAR FPS</strong><small>Exibe discretamente o desempenho atual.</small></div></div>
+            <button id="fps-toggle" class="setting-toggle" type="button" aria-pressed="false"><i></i><b>DESATIVADO</b></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-copy"><span>🖱️</span><div><strong>RASTRO VERMELHO DO MOUSE</strong><small>Exibe a linha vermelha ao movimentar o cursor.</small></div></div>
+            <button id="cursor-trail-toggle" class="setting-toggle on" type="button" aria-pressed="true"><i></i><b>ATIVADO</b></button>
+          </div>
+        </div>
+        <section class="danger-zone" aria-labelledby="data-progress-title">
+          <div><span class="eyebrow">GERENCIAMENTO DE DADOS</span><h3 id="data-progress-title">DADOS E PROGRESSO</h3><p>Apague permanentemente seu saldo, recordes, compras, estatísticas e melhorias.</p></div>
+          <button id="open-progress-reset" class="danger-button" type="button">REDEFINIR TODO O PROGRESSO</button>
+        </section>
+        <div class="settings-actions"><button id="restore-settings" class="secondary">RESTAURAR PADRÕES</button><button id="close-settings" class="primary">VOLTAR</button></div>
+      </div>
+      <div id="reset-progress-dialog" class="reset-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="reset-dialog-title">
+        <div class="reset-dialog-card">
+          <div id="reset-step-warning">
+            <span class="reset-warning-icon">!</span><h3 id="reset-dialog-title">REDEFINIR PROGRESSO?</h3>
+            <p>Isso apagará permanentemente todo o seu progresso e fará você começar o jogo novamente do zero.</p>
+            <div class="reset-list"><strong>SERÃO APAGADOS:</strong><span>Dinheiro e recordes</span><span>Casa e melhorias</span><span>Skins e desbloqueios</span><span>Investimentos, apostas e estatísticas</span><span>Todo outro progresso salvo</span></div>
+            <b class="irreversible">ESTA AÇÃO NÃO PODE SER DESFEITA.</b>
+            <div class="reset-actions"><button id="cancel-progress-reset" class="secondary">CANCELAR</button><button id="continue-progress-reset" class="danger-button">CONTINUAR</button></div>
+          </div>
+          <div id="reset-step-confirm" class="hidden">
+            <span class="reset-warning-icon">!</span><h3>TEM CERTEZA?</h3><p>Digite <strong>REDEFINIR</strong> para confirmar que deseja apagar todo o progresso.</p>
+            <label for="reset-confirm-input">CONFIRMAÇÃO</label><input id="reset-confirm-input" type="text" autocomplete="off" spellcheck="false" placeholder="Digite REDEFINIR">
+            <div class="reset-actions"><button id="back-progress-reset" class="secondary">VOLTAR</button><button id="confirm-progress-reset" class="danger-button" disabled>APAGAR PROGRESSO</button></div>
+          </div>
+          <div id="reset-step-success" class="hidden">
+            <span class="reset-success-icon">✓</span><h3>PROGRESSO REDEFINIDO</h3><p>Seu progresso foi apagado e o jogo foi restaurado para o estado inicial.</p><button id="finish-progress-reset" class="primary reset-finish">CONTINUAR</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="skin-shop" class="screen hidden" aria-label="Loja de skins">
+      <div class="shop-panel">
+        <header class="invest-header">
+          <button id="close-shop" class="back-button" aria-label="Voltar ao menu">←</button>
+          <div><span class="eyebrow">PERSONALIZE SEU CORREDOR</span><h2>LOJA DE SKINS</h2></div>
+          <div class="available"><span>SALDO</span><strong id="shop-balance">R$ 0</strong></div>
+        </header>
+        <p class="invest-intro">Compre camisas com o dinheiro das corridas e equipe suas favoritas.</p>
+        <h3 class="shop-category character-category"><span>🏃</span> PERSONAGEM</h3>
+        <div class="character-selector">
+          <button id="character-prev" class="character-arrow" type="button" aria-label="Personagem anterior">←</button>
+          <div class="character-preview-wrap"><canvas id="character-preview" aria-label="Pré-visualização 3D do personagem"></canvas><span class="preview-3d">3D</span></div>
+          <button id="character-next" class="character-arrow" type="button" aria-label="Próximo personagem">→</button>
+          <div class="character-choice"><span>ESCOLHA SEU PERSONAGEM</span><h3 id="character-name">MASCULINO</h3><p id="character-description">Corredor masculino original.</p><button id="select-character" class="skin-action character-select">✓ SELECIONADO</button></div>
+        </div>
+        <h3 class="shop-category"><span>⚽</span> CLUBES</h3>
+        <div class="skin-grid">
+          <article class="skin-card" data-skin="default" data-price="0"><div class="shirt-preview default-shirt"><b>10</b></div><h3>CAMISA ORIGINAL</h3><p>Grátis</p><button class="skin-action">EQUIPADA ✓</button></article>
+          <article class="skin-card" data-skin="terceiro" data-price="2000"><img class="terceiro-preview" src="./assets/textures/terceiro-preview.webp" width="100" height="112" alt="Camisa preta Terceiro com cobra verde-limão"><h3>Terceiro</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="real" data-price="2000"><div class="shirt-preview real-shirt"><b>RM</b></div><h3>REAL MADRID</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="milan" data-price="2000"><div class="shirt-preview milan-shirt"><b>7</b></div><h3>AC MILAN</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="psg" data-price="2000"><div class="shirt-preview psg-shirt"><b>10</b></div><h3>PSG</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="liverpool" data-price="2000"><div class="shirt-preview liverpool-shirt"><b>11</b></div><h3>LIVERPOOL</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="palmeiras" data-price="2000"><div class="shirt-preview palmeiras-shirt"><b>10</b></div><h3>PALMEIRAS</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="corinthians" data-price="2000"><div class="shirt-preview corinthians-shirt"><b>9</b></div><h3>CORINTHIANS</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="flamengo" data-price="2000"><div class="shirt-preview flamengo-shirt"><b>10</b></div><h3>FLAMENGO</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="saopaulo" data-price="2000"><div class="shirt-preview saopaulo-shirt"><b>10</b></div><h3>SÃO PAULO</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="santos" data-price="2000"><div class="shirt-preview santos-shirt"><b>10</b></div><h3>SANTOS</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="fluminense" data-price="2000"><div class="shirt-preview fluminense-shirt"><b>10</b></div><h3>FLUMINENSE</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="atletico" data-price="2000"><div class="shirt-preview atletico-shirt"><b>7</b></div><h3>ATLÉTICO MINEIRO</h3><p>R$ 2.000</p><button class="skin-action">COMPRAR</button></article>
+        </div>
+        <h3 class="shop-category national-category"><span>🌎</span> SELEÇÕES</h3>
+        <div class="skin-grid national-grid">
+          <article class="skin-card" data-skin="brasil" data-price="5000"><div class="shirt-preview brasil-shirt"><b>10</b></div><h3>🇧🇷 BRASIL</h3><p>R$ 5.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="france" data-price="5000"><div class="shirt-preview france-shirt"><b>10</b></div><h3>🇫🇷 FRANÇA</h3><p>R$ 5.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="belgium" data-price="5000"><div class="shirt-preview belgium-shirt"><b>7</b></div><h3>🇧🇪 BÉLGICA</h3><p>R$ 5.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="england" data-price="5000"><div class="shirt-preview england-shirt"><b>9</b></div><h3>🏴 INGLATERRA</h3><p>R$ 5.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="germany" data-price="5000"><div class="shirt-preview germany-shirt"><b>8</b></div><h3>🇩🇪 ALEMANHA</h3><p>R$ 5.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="argentina" data-price="5000"><div class="shirt-preview argentina-shirt"><b>10</b></div><h3>🇦🇷 ARGENTINA</h3><p>R$ 5.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="spain" data-price="5000"><div class="shirt-preview spain-shirt"><b>10</b></div><h3>🇪🇸 ESPANHA</h3><p>R$ 5.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="netherlands" data-price="5000"><div class="shirt-preview netherlands-shirt"><b>10</b></div><h3>🇳🇱 HOLANDA</h3><p>R$ 5.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="croatia" data-price="5000"><div class="shirt-preview croatia-shirt"><b>10</b></div><h3>🇭🇷 CROÁCIA</h3><p>R$ 5.000</p><button class="skin-action">COMPRAR</button></article>
+          <article class="skin-card" data-skin="italy" data-price="5000"><div class="shirt-preview italy-shirt"><b>10</b></div><h3>🇮🇹 ITÁLIA</h3><p>R$ 5.000</p><button class="skin-action">COMPRAR</button></article>
+        </div>
+      </div>
+      <div id="shop-dialog" class="shop-dialog hidden" aria-live="assertive">
+        <div class="shop-dialog-card">
+          <span id="shop-dialog-icon">?</span><h3 id="shop-dialog-title">CONFIRMAR COMPRA</h3><p id="shop-dialog-text"></p>
+          <div id="shop-confirm-actions"><button id="cancel-purchase" class="secondary">CANCELAR</button><button id="confirm-purchase" class="primary">COMPRAR</button></div>
+          <button id="shop-dialog-ok" class="primary hidden">CONTINUAR</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tutorial" class="screen hidden" aria-label="Tutorial do jogo">
+      <div class="tutorial-shell">
+        <header class="tutorial-header">
+          <div><span class="eyebrow">GUIA DO JOGADOR</span><h2>TUTORIAL</h2></div>
+          <button id="close-tutorial-top" class="back-button" aria-label="Fechar tutorial">×</button>
+        </header>
+        <div class="tutorial-progress"><span id="tutorial-counter">1/8 — CORRIDA</span><div id="tutorial-dots"></div></div>
+        <div class="tutorial-pages">
+          <article class="tutorial-page active" data-title="CORRIDA">
+            <div class="tutorial-icon">🏃</div><h3>COMO JOGAR</h3><p>Corra o máximo possível, desvie dos obstáculos e colete símbolos de <strong>R$</strong> pelo caminho. Bater em um obstáculo encerra a corrida, e todo dinheiro coletado é adicionado ao seu saldo.</p>
+            <div class="tutorial-controls"><div><kbd>A</kbd><kbd>←</kbd><span>Mover para esquerda</span></div><div><kbd>D</kbd><kbd>→</kbd><span>Mover para direita</span></div><div><kbd>W</kbd><kbd>↑</kbd><kbd>ESPAÇO</kbd><span>Pular</span></div><div><kbd>S</kbd><kbd>↓</kbd><span>Deslizar</span></div></div>
+          </article>
+          <article class="tutorial-page" data-title="SALDO">
+            <div class="tutorial-icon">💰</div><h3>SEU SALDO</h3><p>Os símbolos de R$ coletados durante todas as corridas ficam acumulados em um único saldo. Esse dinheiro permanece salvo no navegador e pode ser utilizado nas outras áreas do jogo.</p>
+            <div class="tutorial-demo balance-demo"><small>SALDO ACUMULADO</small><strong>R$ 10 → R$ 20 → R$ 30…</strong><span>Continue correndo para aumentar seu patrimônio.</span></div>
+          </article>
+          <article class="tutorial-page" data-title="INVESTIMENTOS">
+            <div class="tutorial-icon">📈</div><h3>INVESTIMENTOS</h3><p>Escolha uma quantia do seu saldo e uma opção para investir. Diferentes possibilidades apresentam relações diferentes entre <strong>risco e retorno</strong>.</p>
+            <div class="return-grid"><span>Coca-Cola <b>2x</b></span><span>Itaú <b>2x</b></span><span>Nubank <b>2x</b></span><span>Petrobras <b>2x</b></span><span>Ambev <b>2x</b></span><span>Poupança <b>1,15x</b></span><span>Tesouro Selic <b>1,25x</b></span></div>
+            <small class="tutorial-note">Retornos maiores podem estar associados a riscos maiores. Analise as opções e observe os resultados.</small>
+          </article>
+          <article class="tutorial-page" data-title="TIGRINHO">
+            <div class="tutorial-icon">🎰</div><h3>TIGRINHO</h3><p>Na área de apostas, você pode escolher uma quantia do saldo para tentar obter o prêmio anunciado. O valor não pode ser maior que o saldo disponível.</p>
+            <div class="risk-warning"><strong>⚠ APOSTAS ENVOLVEM RISCO</strong><span>Elas podem causar a perda do dinheiro apostado. Aposta não é investimento.</span></div>
+          </article>
+          <article class="tutorial-page" data-title="SKINS">
+            <div class="tutorial-icon">👕</div><h3>LOJA DE SKINS</h3><p>Use o saldo acumulado para comprar novas camisas para o personagem. A loja está organizada em duas categorias:</p>
+            <div class="category-demo"><div><span>⚽</span><strong>CLUBES</strong><small>R$ 2.000</small></div><div><span>🌎</span><strong>SELEÇÕES</strong><small>R$ 5.000</small></div></div><p>Depois da compra, a skin fica permanentemente desbloqueada e pode ser equipada quando você quiser.</p>
+          </article>
+          <article class="tutorial-page" data-title="CASA">
+            <div class="tutorial-icon">🏠</div><h3>CASA EVOLUTIVA</h3><p>Na área <strong>CASA</strong>, você pode usar o dinheiro acumulado para melhorar sua residência. Cada melhoria custa R$ 5.000 e transforma o ambiente 3D, deixando a casa maior, mais organizada e mais luxuosa.</p>
+            <div class="house-tutorial-demo"><span>🏚️<b>NÍVEL 1</b></span><i>→</i><span>🏠<b>NÍVEL 2</b></span><i>→</i><span>🏡<b>NÍVEL 3</b></span><i>→</i><span>🏘️<b>NÍVEL 4</b></span><i>→</i><span>🏰<b>NÍVEL 5</b></span></div>
+            <div class="tutorial-demo balance-demo"><small>COMO MELHORAR</small><strong>CASA → MELHORAR CASA</strong><span>O valor é retirado do mesmo saldo das corridas. Seu nível permanece salvo quando você fecha o jogo.</span></div>
+          </article>
+          <article class="tutorial-page" data-title="PROGRESSO">
+            <div class="tutorial-icon">🏆</div><h3>RECORDES E PROGRESSO</h3>
+            <div class="progress-list"><div><b>DISTÂNCIA</b><span>Metros percorridos na partida atual.</span></div><div><b>DINHEIRO COLETADO</b><span>R$ obtidos durante a corrida atual.</span></div><div><b>RECORDE</b><span>Sua maior distância já alcançada.</span></div><div><b>SALDO ACUMULADO</b><span>Dinheiro disponível entre todas as partidas.</span></div><div><b>HISTÓRICO</b><span>Totais registrados nas áreas financeiras e de apostas.</span></div></div>
+          </article>
+          <article class="tutorial-page" data-title="EDUCAÇÃO FINANCEIRA">
+            <div class="tutorial-icon">💡</div><h3>QUAL É O OBJETIVO?</h3><blockquote>“Além de chegar o mais longe possível na corrida, você terá que decidir o que fazer com o dinheiro conquistado. Gastar, guardar, investir ou arriscar são decisões que podem produzir resultados diferentes.”</blockquote><blockquote>“Observe os resultados das suas escolhas e descubra como decisões financeiras podem afetar seu patrimônio.”</blockquote>
+          </article>
+        </div>
+        <footer class="tutorial-nav"><button id="tutorial-prev" class="secondary">← ANTERIOR</button><button id="close-tutorial" class="tutorial-close">FECHAR TUTORIAL</button><button id="tutorial-next" class="primary">PRÓXIMO →</button></footer>
+      </div>
+    </section>
+
+    <section id="tigrinho" class="screen hidden" aria-label="Simulação educativa de apostas">
+      <div class="tiger-panel">
+        <header class="invest-header tiger-header">
+          <button id="close-tigrinho" class="back-button" aria-label="Voltar ao menu">←</button>
+          <div><span class="eyebrow">SIMULAÇÃO EDUCATIVA</span><h2>TIGRINHO</h2></div>
+          <div class="available tiger-balance"><span>SALDO DISPONÍVEL</span><strong id="tiger-balance">R$ 0</strong></div>
+        </header>
+        <div class="tiger-content">
+          <div class="slot-machine">
+            <div class="slot-top"><i></i><strong>GANHE ATÉ <em>5X</em> O VALOR APOSTADO!</strong><i></i></div>
+            <div class="reels" id="reels"><div class="reel">💎</div><div class="reel">⭐</div><div class="reel">🍀</div></div>
+            <label for="bet-value">VALOR DA APOSTA</label>
+            <div class="money-input bet-input"><span>R$</span><input id="bet-value" type="number" min="0.01" step="0.01" placeholder="0" inputmode="decimal"></div>
+            <div class="promised-prize"><span>Prêmio prometido</span><strong id="promised-prize">R$ 0</strong></div>
+            <p id="bet-error" class="investment-error" role="alert"></p>
+            <button id="bet-button" class="bet-button">APOSTAR <span>▶</span></button>
+          </div>
+          <aside class="bet-history">
+            <span class="eyebrow">SEU HISTÓRICO</span><h3>O PREÇO DA PROMESSA</h3>
+            <div><span>TOTAL APOSTADO</span><strong id="total-bet">R$ 0</strong></div>
+            <div><span>TOTAL GANHO</span><strong class="zero">R$ 0</strong></div>
+            <div><span>TOTAL PERDIDO</span><strong id="total-lost">R$ 0</strong></div>
+            <p id="loss-reminder">Apostar não deve ser tratado como investimento.</p>
+          </aside>
+        </div>
+      </div>
+      <div id="bet-result" class="bet-result hidden" aria-live="assertive">
+        <div class="bet-result-card">
+          <span>×</span><h3>VOCÊ PERDEU!</h3><p id="bet-loss-text">Você perdeu R$ 0.</p>
+          <div><strong>CUIDADO COM PROMESSAS DE DINHEIRO FÁCIL</strong><p>Promessas de ganhos muito altos podem esconder riscos e fazer você perder dinheiro. Apostar não deve ser tratado como investimento.</p></div>
+          <button id="bet-result-ok" class="primary">ENTENDI</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="investments" class="screen hidden" aria-label="Central de investimentos">
+      <div class="invest-panel">
+        <header class="invest-header">
+          <button id="close-investments" class="back-button" aria-label="Voltar ao menu">←</button>
+          <div><span class="eyebrow">EDUCAÇÃO FINANCEIRA</span><h2>INVESTIMENTOS</h2></div>
+          <div class="available"><span>SALDO DISPONÍVEL</span><strong id="available-money">R$ 0</strong></div>
+        </header>
+        <p class="invest-intro">Escolha onde aplicar seu dinheiro. Retornos maiores podem envolver riscos maiores.</p>
+        <div class="investment-grid">
+          <button class="investment-card" data-name="Coca-Cola" data-rate="2" data-kind="company"><i>🥤</i><span>Coca-Cola</span><small>Retorno potencial</small><strong>2x</strong></button>
+          <button class="investment-card" data-name="Itaú" data-rate="2" data-kind="company"><i>🏦</i><span>Itaú</span><small>Retorno potencial</small><strong>2x</strong></button>
+          <button class="investment-card" data-name="Nubank" data-rate="2" data-kind="company"><i>💳</i><span>Nubank</span><small>Retorno potencial</small><strong>2x</strong></button>
+          <button class="investment-card" data-name="Petrobras" data-rate="2" data-kind="company"><i>⛽</i><span>Petrobras</span><small>Retorno potencial</small><strong>2x</strong></button>
+          <button class="investment-card" data-name="Ambev" data-rate="2" data-kind="company"><i>🏭</i><span>Ambev</span><small>Retorno potencial</small><strong>2x</strong></button>
+          <button class="investment-card safe" data-name="Poupança" data-rate="1.15" data-kind="savings"><i>🐷</i><span>Poupança</span><small>Retorno previsível</small><strong>1,15x</strong></button>
+          <button class="investment-card safe" data-name="Tesouro Selic" data-rate="1.25" data-kind="savings"><i>🏛️</i><span>Tesouro Selic</span><small>Retorno previsível</small><strong>1,25x</strong></button>
+        </div>
+        <div id="investment-form" class="investment-form hidden">
+          <div><small>INVESTIMENTO SELECIONADO</small><strong id="selected-investment">—</strong></div>
+          <label for="investment-value">QUANTO DESEJA INVESTIR?</label>
+          <div class="money-input"><span>R$</span><input id="investment-value" type="number" min="1" step="1" placeholder="0" inputmode="decimal"></div>
+          <div class="potential"><span>Retorno potencial</span><strong id="potential-return">R$ 0</strong></div>
+          <p id="investment-error" class="investment-error" role="alert"></p>
+          <button id="invest" class="primary">INVESTIR <span>↗</span></button>
+        </div>
+        <div id="investment-result" class="investment-result hidden" aria-live="assertive">
+          <div id="investment-loader" class="invest-loading"><div class="loader"></div><p>ANALISANDO O MERCADO…</p></div>
+          <div id="investment-message" class="hidden"><span id="result-icon"></span><h3 id="result-title"></h3><p id="result-text"></p><strong id="result-balance"></strong><button id="result-ok" class="secondary">CONTINUAR</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="hud" class="hidden" aria-live="polite">
+      <div class="hud-money"><small>DINHEIRO</small><strong id="money">R$ 0</strong></div>
+      <div class="hud-stats"><span>DISTÂNCIA <b id="distance">0 m</b></span><span>RECORDE <b id="best">0 m</b></span></div>
+      <div id="speed">VELOCIDADE <i></i><i></i><i></i><i></i><i></i></div>
+    </section>
+
+    <section id="gameover" class="screen hidden">
+      <div class="over-card">
+        <span class="crash-icon">!</span>
+        <p class="eyebrow">A CORRIDA TERMINOU</p>
+        <h2>FIM DE JOGO</h2>
+        <div class="result"><span>Distância percorrida</span><strong id="final-distance">0 m</strong></div>
+        <div class="result"><span>Dinheiro coletado</span><strong id="final-money">R$ 0</strong></div>
+        <div class="result"><span>Recorde</span><strong id="final-best">0 m</strong></div>
+        <button id="restart" class="primary">JOGAR NOVAMENTE <span>↻</span></button>
+        <button id="back" class="secondary">MENU PRINCIPAL</button>
+      </div>
+    </section>
+
+    <section id="pause-screen" class="screen hidden">
+      <div class="pause-card">
+        <span class="pause-symbol">Ⅱ</span>
+        <p class="eyebrow">CORRIDA INTERROMPIDA</p>
+        <h2>JOGO PAUSADO</h2>
+        <button id="resume-game" class="primary">RETOMAR AO JOGO <span>▶</span></button>
+      </div>
+    </section>
+
+    <div id="tip" class="hidden">Use ← → para trocar de pista</div>
+    <div id="fps-counter" class="fps-counter hidden">FPS: 60</div>
+    <div id="flash"></div>
+    <div class="vignette"></div>
+  </main>
+  <script type="importmap">{"imports":{"three":"./assets/vendor/three.module.js"}}</script>
+  <script type="module" src="./js/gltf-loader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="./js/house-visuals.js"></script>
+  <script src="./js/game.js"></script>
+</body>
+</html>
