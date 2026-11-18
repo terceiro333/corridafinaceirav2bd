@@ -347,10 +347,132 @@
     <div id="flash"></div>
     <div class="vignette"></div>
   </main>
-  <script type="importmap">{"imports":{"three":"./assets/vendor/three.module.js"}}</script>
-  <script type="module" src="./js/gltf-loader.js"></script>
+<!-- IMPORTAÇÃO ÚNICA DO THREE.JS VIA CDN PARA EVITAR ERROS -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script src="./js/house-visuals.js"></script>
   <script src="./js/game.js"></script>
+
+  <!-- SCRIPT DE SINCRONIZAÇÃO COM O FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDu8m0YKIjpBcbXuK5xAQCybX2WbIZPS_g",
+      authDomain: "corrida-financeira-55569.firebaseapp.com",
+      projectId: "corrida-financeira-55569",
+      storageBucket: "corrida-financeira-55569.firebasestorage.app",
+      messagingSenderId: "525825180955",
+      appId: "1:525825180955:web:0ec5a1d23a7b8d8f7effbe",
+      measurementId: "G-XN68CNF9T1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let playerName = localStorage.getItem("cf_player_name") || "";
+    const modal = document.getElementById("cf-ranking-modal");
+    const nameInput = document.getElementById("cf-player-name");
+    const startBtn = document.getElementById("cf-start-btn");
+    const lbBtn = document.getElementById("cf-leaderboard-btn");
+    const lbPanel = document.getElementById("cf-leaderboard-panel");
+    const lbList = document.getElementById("cf-ranking-list");
+
+    if (playerName) {
+      nameInput.value = playerName;
+    }
+
+    startBtn.addEventListener("click", () => {
+      const val = nameInput.value.trim();
+      if (!val) {
+        alert("Por favor, digite seu nome para entrar no ranking!");
+        return;
+      }
+      playerName = val;
+      localStorage.setItem("cf_player_name", playerName);
+      modal.style.display = "none";
+      syncScoreToFirebase();
+    });
+
+    lbBtn.addEventListener("click", () => {
+      lbPanel.style.display = lbPanel.style.display === "block" ? "none" : "block";
+    });
+    document.getElementById("cf-close-lb").addEventListener("click", () => {
+      lbPanel.style.display = "none";
+    });
+
+    function extractNumbersFromStorage() {
+      let bestMoney = 0;
+      let bestDist = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        try {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed === "object" && parsed !== null) {
+            const moneyVal = parsed.money ?? parsed.saldo ?? parsed.balance ?? parsed.coins ?? 0;
+            const distVal = parsed.record ?? parsed.recorde ?? parsed.bestDistance ?? parsed.highScore ?? 0;
+            if (Number(moneyVal) > bestMoney) bestMoney = Number(moneyVal);
+            if (Number(distVal) > bestDist) bestDist = Number(distVal);
+          }
+        } catch (e) {
+          const num = Number(raw);
+          if (!isNaN(num)) {
+            if (/saldo|money|dinheiro|coins/i.test(key) && num > bestMoney) bestMoney = num;
+            if (/record|dist|score|best/i.test(key) && num > bestDist) bestDist = num;
+          }
+        }
+      }
+      return { money: bestMoney, record: bestDist };
+    }
+
+    let lastSavedHash = "";
+    async function syncScoreToFirebase() {
+      if (!playerName) return;
+      const { money, record } = extractNumbersFromStorage();
+      const hash = `${playerName}_${money}_${record}`;
+      if (hash === lastSavedHash) return;
+      lastSavedHash = hash;
+
+      const docId = playerName.toLowerCase().replace(/[^a-z0-9]/g, "_");
+      try {
+        await setDoc(doc(db, "ranking", docId), {
+          nome: playerName,
+          dinheiro: money,
+          recorde: record,
+          atualizadoEm: new Date().toISOString()
+        }, { merge: true });
+      } catch (err) {
+        console.error("Erro ao salvar no Firebase:", err);
+      }
+    }
+
+    setInterval(syncScoreToFirebase, 3000);
+
+    const q = query(collection(db, "ranking"), orderBy("dinheiro", "desc"), limit(15));
+    onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        lbList.innerHTML = "<div style='color:#94a3b8; font-size:13px;'>Nenhum jogador registrado ainda.</div>";
+        return;
+      }
+      let html = "";
+      let pos = 1;
+      snapshot.forEach((docSnap) => {
+        const d = docSnap.data();
+        const medal = pos === 1 ? "🥇" : pos === 2 ? "🥈" : pos === 3 ? "🥉" : `${pos}º`;
+        html += `
+          <div class="cf-row">
+            <span>${medal} ${d.nome}</span>
+            <span>R$ ${Number(d.dinheiro || 0).toLocaleString("pt-BR")} · ${d.recorde || 0}m</span>
+          </div>
+        `;
+        pos++;
+      });
+      lbList.innerHTML = html;
+    });
+  </script>
+</body>
+</html>
 </body>
 </html>
